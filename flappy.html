@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Flappy Bird</title>
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  overflow: hidden;
+  background: #70c5ce;
+  font-family: Arial, Helvetica, sans-serif;
+  touch-action: manipulation;
+}
+canvas { display: block; background: linear-gradient(#70c5ce, #d0f4f7); }
+
+/* GAME OVER OVERLAY */
+#overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: rgba(0,0,0,0.55);
+  z-index: 10;
+}
+#gameOverText {
+  color: #fff;
+  font-size: 42px;
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+#restartBtn {
+  padding: 14px 40px;
+  font-size: 20px;
+  font-weight: bold;
+  background: #f4c542;
+  border: 4px solid #000;
+  cursor: pointer;
+}
+#restartBtn:active { transform: translateY(2px); }
+</style>
+</head>
+
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<div id="overlay">
+  <div id="gameOverText">GAME OVER</div>
+  <button id="restartBtn">RESTART</button>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const overlay = document.getElementById("overlay");
+const restartBtn = document.getElementById("restartBtn");
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
+
+/* BIRD */
+const birdImg = new Image();
+birdImg.src = "newflappy.png";
+
+let bird = { x:80, y:canvas.height/2, w:40, h:30, v:0 };
+
+/* ADJUSTED SENSITIVITY */
+const gravity = 0.35; // bird falls smoothly
+const lift = -6;       // flap feels natural, not too strong
+
+/* GAME STATE */
+let pipes = [];
+let frame = 0;
+let score = 0;
+let best = localStorage.getItem("best") || 0;
+let gameOver = false;
+let loopId = null;
+
+/* INPUT */
+function flap() { 
+  if (!gameOver) bird.v = lift; 
+}
+document.addEventListener("touchstart", flap);
+document.addEventListener("mousedown", flap);
+
+/* RESTART */
+restartBtn.onclick = () => {
+  bird = { x:80, y:canvas.height/2, w:40, h:30, v:0 };
+  pipes = [];
+  frame = 0;
+  score = 0;
+  gameOver = false;
+  overlay.style.display = "none";
+  if(loopId) cancelAnimationFrame(loopId);
+  loop();
+};
+
+/* PIPES */
+function drawPipes() {
+  pipes.forEach(p => {
+    ctx.fillStyle = "#4caf50";
+    ctx.fillRect(p.x, 0, 60, p.top);
+    ctx.fillRect(p.x, p.top + p.gap, 60, canvas.height);
+    ctx.strokeStyle = "#1b5e20";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(p.x, 0, 60, p.top);
+    ctx.strokeRect(p.x, p.top + p.gap, 60, canvas.height);
+  });
+}
+
+/* UPDATE */
+function update() {
+  bird.v += gravity;
+  bird.y += bird.v;
+
+  if(frame % 100 === 0){
+    let top = Math.random() * (canvas.height/2);
+    pipes.push({ x: canvas.width, top, gap: 160 });
+  }
+
+  pipes.forEach(p => p.x -= 3);
+
+  if(pipes.length && pipes[0].x + 60 < 0){
+    pipes.shift();
+    score++;
+    if(score > best){
+      best = score;
+      localStorage.setItem("best", best);
+    }
+  }
+
+  for(let p of pipes){
+    if(
+      bird.x + bird.w/2 > p.x &&
+      bird.x - bird.w/2 < p.x + 60 &&
+      (bird.y - bird.h/2 < p.top || bird.y + bird.h/2 > p.top + p.gap)
+    ){
+      endGame();
+    }
+  }
+
+  if(bird.y < 0 || bird.y > canvas.height) endGame();
+  frame++;
+}
+
+/* DRAW */
+function drawBird() {
+  ctx.drawImage(birdImg, bird.x - bird.w/2, bird.y - bird.h/2, bird.w, bird.h);
+}
+function drawScore() {
+  ctx.fillStyle = "#fff";
+  ctx.font = "28px Arial";
+  ctx.fillText(score, canvas.width/2 - 8, 50);
+}
+
+/* END */
+function endGame(){
+  gameOver = true;
+  overlay.style.display = "flex";
+}
+
+/* LOOP */
+function loop(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(!gameOver){
+    update();
+    drawBird();
+    drawPipes();
+    drawScore();
+    loopId = requestAnimationFrame(loop);
+  }
+}
+
+loop();
+</script>
+</body>
+</html>

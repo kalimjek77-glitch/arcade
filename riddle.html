@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pinoy Bugtong Game</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #FFCC70, #FF8177);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background: #fff;
+    width: 95%;
+    max-width: 420px;
+    border-radius: 20px;
+    padding: 25px 20px;
+    text-align: center;
+    box-shadow: 0 12px 25px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+header h1 {
+    font-size: 1.9rem;
+    color: #E63946;
+    margin-bottom: 5px;
+}
+header p {
+    font-weight: 600;
+    color: #333;
+}
+
+.riddle-box {
+    background: #FFE0B2;
+    padding: 20px;
+    border-radius: 15px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: #333;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.riddle-box:hover {
+    transform: scale(1.02);
+}
+
+.choices {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+.choice {
+    padding: 12px;
+    background: #F77F00;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+.choice:hover {
+    background: #D95D00;
+    transform: scale(1.03);
+}
+
+#feedback {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #333;
+}
+
+button {
+    margin-top: 10px;
+    padding: 12px 20px;
+    background: #06D6A0;
+    border: none;
+    color: white;
+    font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: 0.2s;
+}
+button:hover {
+    background: #05A57A;
+}
+
+.hidden { display: none; }
+
+@media (max-width: 500px) {
+    .riddle-box { font-size: 1rem; padding: 18px; }
+    .choice { font-size: 0.95rem; padding: 10px; }
+    button { font-size: 0.95rem; padding: 10px 15px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>🧠 Bugtong Challenge</h1>
+        <p>Lives: <span id="lives">10</span> | Score: <span id="score">0</span></p>
+    </header>
+
+    <div id="riddleBox" class="riddle-box">
+        <p id="riddleTxt">Press Start to begin!</p>
+    </div>
+
+    <div class="choices">
+        <button class="choice" id="choiceA"></button>
+        <button class="choice" id="choiceB"></button>
+        <button class="choice" id="choiceC"></button>
+    </div>
+
+    <div id="feedback"></div>
+    <button id="startBtn">Start Game</button>
+    <button id="nextBtn" class="hidden">Next Bugtong</button>
+</div>
+
+<script>
+// 100 sample Pinoy Bugtong (replace answers with real ones)
+const riddles = [
+{q:"Bumili ako ng alipin, mataas pa sa akin.", a:"Sumbrero"},
+{q:"Isang bayabas, pito ang butas.", a:"Ulo ng tao"},
+{q:"Dumaan ang hari, nagkagatan ang mga pari.", a:"Siper"},
+{q:"Munting hayop na pangahas, aaligid-aligid sa ningas.", a:"Gamu-gamo"},
+{q:"Isang butil ng palay, sakop ang buong bahay.", a:"Ilaw"},
+{q:"Tinaga ko ang puno, sa dulo nagdurugo.", a:"Gumamela"},
+{q:"Ako ay may kaibigan, kasama ko kahit saan.", a:"Anino"},
+{q:"Kumot ng hari, hindi mahati-hati.", a:"Tubig"},
+{q:"Hindi naman hari, hindi naman pare, nagsusuot ng sarisari.", a:"Sampayan"},
+{q:"Dugtong-dugtong, magkakarugtong, tanikalang umuugong.", a:"Tren"},
+// ... add 90 more riddles here
+];
+
+// Game variables
+let current = 0, lives = 10, score = 0;
+const livesEl = document.getElementById("lives");
+const scoreEl = document.getElementById("score");
+const riddleTxt = document.getElementById("riddleTxt");
+const choiceA = document.getElementById("choiceA");
+const choiceB = document.getElementById("choiceB");
+const choiceC = document.getElementById("choiceC");
+const feedback = document.getElementById("feedback");
+const startBtn = document.getElementById("startBtn");
+const nextBtn = document.getElementById("nextBtn");
+
+// Start game
+startBtn.addEventListener("click", () => {
+    shuffleArray(riddles);
+    current = 0; lives = 10; score = 0;
+    livesEl.textContent = lives;
+    scoreEl.textContent = score;
+    startBtn.classList.add("hidden");
+    loadRiddle();
+});
+
+// Load riddle
+function loadRiddle(){
+    feedback.textContent = "";
+    nextBtn.classList.add("hidden");
+    const r = riddles[current];
+    riddleTxt.textContent = r.q;
+    const choices = generateThree(r.a);
+    choiceA.textContent = choices[0];
+    choiceB.textContent = choices[1];
+    choiceC.textContent = choices[2];
+    [choiceA, choiceB, choiceC].forEach(b => b.disabled = false);
+}
+
+// Generate 3 options with one correct
+function generateThree(correct){
+    const opts = [correct];
+    while(opts.length < 3){
+        const rand = riddles[Math.floor(Math.random()*riddles.length)].a;
+        if(!opts.includes(rand)) opts.push(rand);
+    }
+    return shuffleArray(opts);
+}
+
+// Choice click
+[choiceA, choiceB, choiceC].forEach(btn => {
+    btn.addEventListener("click", () => {
+        const selected = btn.textContent;
+        const correct = riddles[current].a;
+        [choiceA, choiceB, choiceC].forEach(b => b.disabled = true);
+
+        if(selected === correct){
+            feedback.textContent = "Tama! 🎉";
+            score++; scoreEl.textContent = score;
+        } else{
+            feedback.textContent = `Mali! Sagot: ${correct}`;
+            lives--; livesEl.textContent = lives;
+        }
+
+        // Always allow moving to next riddle if there are riddles left
+        if(current < riddles.length - 1){
+            nextBtn.classList.remove("hidden");
+        } else {
+            riddleTxt.textContent = "🎉 Natapos mo ang Bugtong!";
+            feedback.textContent = `Final Score: ${score}`;
+            nextBtn.classList.add("hidden");
+        }
+    });
+});
+
+// Next button
+nextBtn.addEventListener("click", () => {
+    current++;
+    if(current >= riddles.length){
+        riddleTxt.textContent = "🎉 Natapos mo ang Bugtong!";
+        feedback.textContent = `Final Score: ${score}`;
+        nextBtn.classList.add("hidden");
+    } else {
+        loadRiddle();
+    }
+});
+
+// Shuffle utility
+function shuffleArray(arr){
+    for(let i = arr.length-1; i>0; i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+</script>
+</body>
+</html>
